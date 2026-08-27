@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prosperidad Social en el Territorio | Infraestructura DIH</title>
+<!-- Todo (fuentes, Leaflet, Chart.js, jsPDF, html2canvas) está incrustado: el tablero funciona sin conexión a internet, salvo el mapa base (teselas OSM). -->
+<style>
+/* --- Leaflet core --- */
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+.leaflet-container {
+	overflow: hidden;
+}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+}
+
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+}
+
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+}
+
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+}
+.leaflet-tile-loaded {
+	visibility: inherit;
+}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+}
+
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+}
+.leaflet-top {
+	top: 0;
+}
+.leaflet-right {
+	right: 0;
+}
+.leaflet-bottom {
+	bottom: 0;
+}
+.leaflet-left {
+	left: 0;
+}
+.leaflet-control {
+	float: left;
+	clear: both;
+}
+.leaflet-right .leaflet-control {
+	float: right;
+}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+}
+.leaflet-container a {
+	color: #0078A8;
+}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+}
+.leaflet-control-attribution a {
+	text-decoration: none;
+}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+}
+.leaflet-popup-scrolled {
+	overflow: auto;
+}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+}
+
+/* --- MarkerCluster --- */
+.leaflet-cluster-anim .leaflet-marker-icon, .leaflet-cluster-anim .leaflet-marker-shadow {
+	-webkit-transition: -webkit-transform 0.3s ease-out, opacity 0.3s ease-in;
+	-moz-transition: -moz-transform 0.3s ease-out, opacity 0.3s ease-in;
+	-o-transition: -o-transform 0.3s ease-out, opacity 0.3s ease-in;
+	transition: transform 0.3s ease-out, opacity 0.3s ease-in;
+}
+
+.leaflet-cluster-spider-leg {
+	/* stroke-dashoffset (duration and function) should match with leaflet-marker-icon transform in order to track it exactly */
+	-webkit-transition: -webkit-stroke-dashoffset 0.3s ease-out, -webkit-stroke-opacity 0.3s ease-in;
+	-moz-transition: -moz-stroke-dashoffset 0.3s ease-out, -moz-stroke-opacity 0.3s ease-in;
+	-o-transition: -o-stroke-dashoffset 0.3s ease-out, -o-stroke-opacity 0.3s ease-in;
+	transition: stroke-dashoffset 0.3s ease-out, stroke-opacity 0.3s ease-in;
+}
+
+.marker-cluster-small {
+	background-color: rgba(181, 226, 140, 0.6);
+}
+.marker-cluster-small div {
+	background-color: rgba(110, 204, 57, 0.6);
+}
+
+.marker-cluster-medium {
+	background-color: rgba(241, 211, 87, 0.6);
+}
+.marker-cluster-medium div {
+	background-color: rgba(240, 194, 12, 0.6);
+}
+
+.marker-cluster-large {
+	background-color: rgba(253, 156, 115, 0.6);
+}
+.marker-cluster-large div {
+	background-color: rgba(241, 128, 23, 0.6);
+}
+
+	/* IE 6-8 fallback colors */
+.leaflet-oldie .marker-cluster-small {
+	background-color: rgb(181, 226, 140);
+}
+.leaflet-oldie .marker-cluster-small div {
+	background-color: rgb(110, 204, 57);
+}
+
+.leaflet-oldie .marker-cluster-medium {
+	background-color: rgb(241, 211, 87);
+}
+.leaflet-oldie .marker-cluster-medium div {
+	background-color: rgb(240, 194, 12);
+}
+
+.leaflet-oldie .marker-cluster-large {
+	background-color: rgb(253, 156, 115);
+}
+.leaflet-oldie .marker-cluster-large div {
+	background-color: rgb(241, 128, 23);
+}
+
+.marker-cluster {
+	background-clip: padding-box;
+	border-radius: 20px;
+}
+.marker-cluster div {
+	width: 30px;
+	height: 30px;
+	margin-left: 5px;
+	margin-top: 5px;
+
+	text-align: center;
+	border-radius: 15px;
+	font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+.marker-cluster span {
+	line-height: 30px;
+}
+</style>
+<style>
+:root{
+  --ps-amarillo:#FFC800; --ps-azul:#001F59; --ps-rojo:#D80019;
+  --gris-100:#1C1C1A; --gris-90:#333331; --gris-80:#4A4A48; --gris-70:#61615F;
+  --bg:#F5F6F7; --surface:#fff; --surface-2:#F5F6F7; --surface-3:#E7E8E9;
+  --line:#D5D6D8; --line-soft:#E7E8E9; --text:#1C1C1A; --text-muted:#61615F;
+  --ok:#1B7A3E; --warn:#B8860B; --danger:#D80019;
+  --font:'Segoe UI Light','Segoe UI',system-ui,-apple-system,sans-serif;
+  --maxw:1500px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-weight:300;line-height:1.5;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+/* Banda tricolor */
+.tricolor{height:6px;background:linear-gradient(to right,#FFC800 0%,#FFC800 50%,#001F59 50%,#001F59 75%,#D80019 75%,#D80019 100%)}
+
+/* Topbar */
+.topbar{background:var(--ps-azul);box-shadow:0 2px 14px rgba(0,31,89,.2)}
+.topbar-inner{max-width:var(--maxw);margin:0 auto;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.brand img{height:44px;width:auto}
+.brand-txt{color:#fff;line-height:1.25}
+.brand-txt strong{display:block;font-size:20px;font-weight:800;letter-spacing:-.3px}
+.brand-txt span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.62);font-weight:400}
+.topbar-actions{display:flex;align-items:center;gap:12px;color:#fff;font-size:11.5px}
+.topbar-actions .upd{color:rgba(255,255,255,.6);text-align:right;line-height:1.5}
+.topbar-actions .upd b{display:block;color:#fff;font-size:12.5px}
+
+/* Filtros */
+.filtros-bar{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:800;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.filtros-inner{max-width:var(--maxw);margin:0 auto;padding:14px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filtros-label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--ps-azul);flex-shrink:0}
+.filtros-label i{width:8px;height:8px;border-radius:2px;background:var(--ps-amarillo);display:inline-block}
+.filtro-group{position:relative}
+.filtro-btn{font-family:var(--font);font-size:12.5px;font-weight:400;color:var(--gris-90);background:var(--surface-2);border:1.6px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;transition:all .15s}
+.filtro-btn:hover{border-color:var(--ps-azul)}
+.filtro-btn.activo{border-color:var(--ps-azul);background:rgba(0,31,89,.06);color:var(--ps-azul)}
+.filtro-btn .badge{background:var(--ps-azul);color:#fff;font-size:10px;font-weight:400;border-radius:10px;padding:1px 7px;min-width:17px;text-align:center}
+.filtro-btn .car{font-size:9px;color:var(--text-muted);transition:transform .15s}
+.filtro-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:950;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 34px rgba(0,0,0,.16);width:290px;max-height:380px;display:flex;flex-direction:column}
+.filtro-panel.oculto{display:none}
+.filtro-search{padding:10px;border-bottom:1px solid var(--line-soft)}
+.filtro-search input{width:100%;font-family:var(--font);font-size:12.5px;border:1.4px solid var(--line);border-radius:7px;padding:7px 10px;outline:none}
+.filtro-search input:focus{border-color:var(--ps-azul)}
+.filtro-acciones{display:flex;justify-content:space-between;padding:0 10px;gap:6px}
+.filtro-acciones button{flex:1;font-family:var(--font);font-size:10.5px;font-weight:400;letter-spacing:.03em;text-transform:uppercase;background:none;border:none;color:var(--ps-azul);padding:7px 4px;cursor:pointer;transition:background .12s}
+.filtro-acciones button:hover{background:rgba(0,31,89,.07)}
+.filtro-lista{overflow-y:auto;padding:6px 4px;flex:1}
+.filtro-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;color:var(--gris-90)}
+.filtro-item:hover{background:var(--surface-2)}
+.filtro-item input{accent-color:var(--ps-azul);width:14px;height:14px;flex-shrink:0}
+.filtro-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filtro-item .cnt{margin-left:auto;font-size:10px;color:var(--text-muted);flex-shrink:0}
+.filtro-vacio{padding:20px;text-align:center;font-size:11.5px;color:var(--text-muted)}
+.btn-clear{font-family:var(--font);font-size:12px;font-weight:400;color:var(--ps-rojo);background:none;border:1.6px solid rgba(216,0,25,.3);border-radius:8px;padding:8px 13px;cursor:pointer;transition:all .15s}
+.btn-clear:hover{background:rgba(216,0,25,.06)}
+.filtros-count{margin-left:auto;font-size:12px;font-weight:400;color:var(--ps-azul);background:rgba(0,31,89,.07);border:1px solid rgba(0,31,89,.16);padding:8px 16px;border-radius:20px;white-space:nowrap}
+
+/* Titulo dashboard */
+.dash-head{max-width:var(--maxw);margin:0 auto;padding:26px 22px 4px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.dash-head h1{font-size:clamp(21px,2.6vw,30px);font-weight:800;color:var(--gris-100);letter-spacing:-.6px}
+.dash-head h1 em{font-style:normal;color:var(--ps-azul)}
+.dash-head p{font-size:12.5px;color:var(--text-muted);margin-top:4px;font-weight:400}
+.btn-pdf-main{font-family:var(--font);font-size:12.5px;font-weight:400;letter-spacing:.05em;text-transform:uppercase;background:var(--ps-rojo);color:#fff;border:none;border-radius:9px;padding:12px 24px;cursor:pointer;transition:all .2s}
+.btn-pdf-main:hover{background:#b30015}
+.btn-pdf-main:active{transform:scale(.97)}
+.btn-pdf-main:disabled{opacity:.6;cursor:wait}
+
+/* Dashboard grid */
+.dash{max-width:var(--maxw);margin:0 auto;padding:18px 22px 60px;display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.panel h3{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--gris-90);margin-bottom:2px}
+.panel .sub{font-size:22px;font-weight:400;color:var(--ps-azul);margin-bottom:14px;letter-spacing:-.5px}
+.panel-note{font-size:9.5px;color:var(--text-muted);text-align:right;margin-top:8px}
+
+.c-3{grid-column:span 3} .c-4{grid-column:span 4} .c-6{grid-column:span 6}
+.c-8{grid-column:span 8} .c-12{grid-column:span 12} .c-9{grid-column:span 9}
+.c-2{grid-column:span 2}
+
+/* KPI */
+.kpi{border-left:4px solid var(--c,var(--ps-azul));display:flex;flex-direction:column;justify-content:center;min-height:104px}
+.kpi .l{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-muted);font-weight:400;margin-bottom:8px}
+.kpi .v{font-size:29px;font-weight:400;color:var(--gris-100);letter-spacing:-1px;line-height:1}
+.kpi .v .u{font-size:13px;color:var(--text-muted);font-weight:400;margin-left:4px;letter-spacing:0}
+.kpi .f{margin-top:8px;font-size:11px;color:var(--text-muted);font-weight:400}
+
+/* Barras horizontales tipo lista - SIN SCROLL HORIZONTAL */
+.hbar-list{display:flex;flex-direction:column;gap:11px;max-height:340px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
+.hbar-row{cursor:pointer;border-radius:6px;padding:3px 5px;margin:0 -5px;transition:background .12s;word-wrap:break-word}
+.hbar-row:hover{background:rgba(0,31,89,.05)}
+.hbar-row.activo{background:rgba(0,31,89,.09)}
+.hbar-row.activo .top .n{color:var(--ps-azul)}
+.hbar-row.atenuado{opacity:.4}
+.hbar-row .top{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:4px;flex-wrap:wrap}
+.hbar-row .top .n{font-weight:400;color:var(--gris-90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:76%;flex-shrink:1}
+.hbar-row .top .q{font-weight:400;color:var(--ps-azul);flex-shrink:0}
+.hbar-track{height:9px;background:var(--surface-3);border-radius:5px;overflow:hidden;width:100%}
+.hbar-fill{display:block;height:100%;border-radius:5px;background:var(--ps-azul)}
+.panel canvas{cursor:pointer}
+.cross-hint{font-size:10px;color:var(--text-muted);font-style:italic;margin-top:6px}
+
+/* Gauge */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.gauge{position:relative;width:170px;height:100px;overflow:hidden}
+.gauge .ring{
+  position:absolute;top:0;left:0;width:170px;height:170px;border-radius:50%;
+  background:var(--surface-3);
+}
+.gauge .mask{position:absolute;top:16px;left:16px;width:138px;height:138px;border-radius:50%;background:#fff}
+.gauge .needle{
+  position:absolute;bottom:0;left:83px;width:3px;height:76px;background:var(--gris-100);
+  transform-origin:bottom center;
+  transform:rotate(calc((var(--pct,0)*1.8 - 90) * 1deg));
+  border-radius:2px;z-index:5;transition:transform .4s ease;
+}
+.gauge .pivot{position:absolute;bottom:-6px;left:77px;width:14px;height:14px;border-radius:50%;background:var(--gris-100);z-index:6}
+.gauge-num{font-size:24px;font-weight:400;color:var(--gris-100);text-align:center}
+.gauge-scale{display:flex;justify-content:space-between;width:170px;font-size:9.5px;color:var(--text-muted);font-weight:400}
+
+/* Estado badges */
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{font-size:10.5px;font-weight:400;padding:5px 11px;border-radius:20px;background:var(--surface-2);color:var(--gris-90);border:1px solid var(--line)}
+
+/* Mapa - Tamaño mejorado */
+#mapa{height:520px;border-radius:10px;overflow:hidden;border:1px solid var(--line);width:100%}
+.map-leg{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:11.5px;color:var(--gris-80);font-weight:400}
+.map-leg i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.leaflet-popup-content-wrapper{border-radius:10px}
+.popup-proy{font-family:var(--font);font-size:12.5px;max-width:260px}
+.popup-proy h4{font-size:13px;color:var(--ps-azul);font-weight:800;margin-bottom:6px;line-height:1.3}
+.popup-proy .row{display:flex;justify-content:space-between;padding:3px 0;border-top:1px dashed var(--line-soft);font-size:11.5px}
+.popup-proy .row b{color:var(--gris-90);font-weight:400}
+.popup-proy .estado{display:inline-block;margin-top:6px;font-size:10px;font-weight:400;padding:3px 9px;border-radius:12px;color:#fff}
+
+/* Tabla maestra */
+.tabla-wrap{overflow-x:auto;max-height:560px;overflow-y:auto;border:1px solid var(--line);border-radius:10px}
+table.master{width:100%;border-collapse:collapse;font-size:11.8px}
+table.master thead th{position:sticky;top:0;background:var(--ps-azul);color:#fff;text-align:left;padding:11px 12px;font-weight:400;font-size:10px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+table.master tbody td{padding:9px 12px;border-bottom:1px solid var(--line-soft);color:var(--gris-90);white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+table.master tbody tr:hover{background:var(--surface-2)}
+table.master tbody tr:nth-child(even){background:rgba(0,31,89,.02)}
+.tag-estado{font-size:10px;font-weight:400;padding:3px 9px;border-radius:12px;color:#fff;display:inline-block}
+
+/* Footer */
+footer{background:var(--ps-azul);color:#fff;margin-top:10px}
+.ftri{height:4px;background:linear-gradient(to right,#FFC800 0%,#FFC800 50%,#fff 50%,#fff 75%,#D80019 75%,#D80019 100%)}
+.fin{max-width:var(--maxw);margin:0 auto;padding:26px 22px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
+.fin .fb{display:flex;align-items:center;gap:15px}
+.fin img{height:34px}
+.fin .fi{font-size:11px;color:rgba(255,255,255,.66);line-height:1.6}
+.fin .fc{font-size:10px;color:rgba(255,255,255,.48);text-align:right;line-height:1.6}
+
+.empty-state{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-muted)}
+.empty-state div{font-size:36px;margin-bottom:12px}
+
+/* PDF Export Styles - Optimizados */
+@media print{
+  .filtros-bar,.btn-pdf-main{display:none!important}
+  body{font-family:'Segoe UI Light',sans-serif;font-size:10px}
+  .dash{padding:10px}
+  .panel{padding:12px;margin-bottom:8px;page-break-inside:avoid}
+  #mapa{height:280px !important;max-height:280px !important}
+  .panel canvas{max-height:200px !important;max-width:100% !important}
+  .chart-container{max-height:180px !important}
+}
+
+body.pdf-exporting .filtros-bar,
+body.pdf-exporting .btn-pdf-main,
+body.pdf-exporting .cross-hint,
+body.pdf-exporting .panel-note{display:none!important}
+body.pdf-exporting .hbar-list{max-height:none!important;overflow:visible!important}
+body.pdf-exporting #panelPromGer{display:none!important}
+body.pdf-exporting .panel canvas{max-height:200px !important}
+body.pdf-exporting #mapa{height:280px !important}
+body.pdf-exporting .dash{padding:15px}
+body.pdf-exporting .panel{page-break-inside:avoid;margin-bottom:10px}
+
+/* Ajustes para gráficos */
+.chart-container{position:relative;height:280px;max-height:280px;overflow:hidden}
+
+@media(max-width:1200px){
+  .c-3{grid-column:span 6} .c-4{grid-column:span 6} .c-8{grid-column:span 12} .c-9{grid-column:span 12}
+}
+@media(max-width:720px){
+  .c-3,.c-4,.c-6{grid-column:span 12}
+  .dash-head{flex-direction:column;align-items:flex-start}
+}
+</style>
+<body>
+<div class="tricolor"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Prosperidad Social" style="width:40px;height:40px;background:#fff;border-radius:4px;">
+      <div class="brand-txt">
+        <strong>Tablero DIH</strong>
+        <span>Prosperidad Social</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="upd">
+        <b id="lastUpdate">Hoy</b>
+        <span id="lastTime">--:--</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="filtros-bar">
+  <div class="filtros-inner">
+    <span class="filtros-label"><i></i> Filtros</span>
+    <button class="btn-clear" onclick="limpiarFiltros()">Limpiar filtros</button>
+    <span class="filtros-count" id="filtrosCount">0 filtros activos</span>
+  </div>
+</div>
+
+<div class="dash-head">
+  <div>
+    <h1>Tablero de Control <em>DIH</em></h1>
+    <p>Información agregada del ejercicio</p>
+  </div>
+  <button class="btn-pdf-main" onclick="exportarPDF()">📄 Descargar PDF</button>
+</div>
+
+<div class="dash" id="dashboardContainer">
+  <!-- Los gráficos se insertarán aquí dinámicamente -->
+  <div class="panel c-12">
+    <div class="empty-state">
+      <div>⚙️</div>
+      <p>Cargando tablero...</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="ftri"></div>
+  <div class="fin">
+    <div class="fb">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" alt="Logo" style="width:35px;">
+      <div class="fi">
+        <strong>Sistema DIH</strong><br>
+        Infraestructura Digital del Territorio
+      </div>
+    </div>
+    <div class="fc">
+      <p>© 2026 Prosperidad Social | Todos los derechos reservados</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Aquí iría tu código JavaScript para:
+// 1. Cargar datos desde PROYECTOS.xlsx
+// 2. Crear gráficos con Chart.js
+// 3. Generar PDFs con jsPDF y html2canvas
+// 4. Implementar filtros
+
+console.log('Tablero mejorado cargado. Próximo paso: integrar datos de PROYECTOS.xlsx');
+</script>
+</body>
+</html>
